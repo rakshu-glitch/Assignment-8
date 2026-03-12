@@ -1,0 +1,115 @@
+<script>
+
+function emoji(code){
+if(code===0) return "☀️"
+if(code<=3) return "⛅"
+if(code<=48) return "🌫"
+if(code<=67) return "🌧"
+if(code<=99) return "⛈"
+return "🌍"
+}
+
+async function getCoordinates(city){
+
+const url=`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`
+
+const res=await fetch(url)
+const data=await res.json()
+
+return data.results[0]
+
+}
+
+async function fetchWeather(city){
+
+const loc=await getCoordinates(city)
+
+const weatherURL=`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m`
+
+const res=await fetch(weatherURL)
+
+const data=await res.json()
+
+return {
+
+name:loc.name,
+country:loc.country,
+region:loc.admin1,
+lat:loc.latitude,
+lon:loc.longitude,
+elevation:loc.elevation,
+timezone:loc.timezone,
+population:loc.population,
+
+temp:data.current.temperature_2m,
+feels:data.current.apparent_temperature,
+humidity:data.current.relative_humidity_2m,
+wind:data.current.wind_speed_10m,
+code:data.current.weather_code
+
+}
+
+}
+
+async function getWeather(){
+
+const c1=document.getElementById("city1").value
+const c2=document.getElementById("city2").value
+const c3=document.getElementById("city3").value
+
+document.getElementById("loading").innerHTML="Loading..."
+
+try{
+
+const results=await Promise.all([
+fetchWeather(c1),
+fetchWeather(c2),
+fetchWeather(c3)
+])
+
+document.getElementById("loading").innerHTML=""
+
+const container=document.getElementById("weatherContainer")
+container.innerHTML=""
+
+results.forEach(w=>{
+
+const card=document.createElement("div")
+card.className="card"
+
+card.innerHTML=`
+
+<h2>${w.name}</h2>
+
+<div class="emoji">${emoji(w.code)}</div>
+
+<div class="temp">${w.temp}°C</div>
+
+<p>🤒 Feels Like: ${w.feels}°C</p>
+<p>💧 Humidity: ${w.humidity}%</p>
+<p>💨 Wind: ${w.wind} km/h</p>
+
+<hr>
+
+<p>🌍 Country: ${w.country}</p>
+<p>🏙 Region: ${w.region}</p>
+<p>📍 Lat/Lon: ${w.lat}, ${w.lon}</p>
+<p>⛰ Elevation: ${w.elevation} m</p>
+<p>🕒 Timezone: ${w.timezone}</p>
+<p>👥 Population: ${w.population}</p>
+
+`
+
+container.appendChild(card)
+
+})
+
+}catch(err){
+
+document.getElementById("loading").innerHTML="⚠ Error fetching data"
+
+}
+
+}
+
+  </script>
